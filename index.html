@@ -167,17 +167,18 @@ section{padding:56px 0}
 <h2>Hablemos de tu próxima importación</h2>
 <p class="lead">Cuéntanos qué quieres importar y te contactaremos con una propuesta.</p>
 <ul class="info">
-<li>✉️ <a id="mailLink" href="#"></a></li>
 <li>💬 <a id="waLink" href="#" target="_blank" rel="noopener">Escríbenos por WhatsApp</a></li>
 <li>📍 Santiago, Chile</li>
 </ul>
 </div>
 <form id="f">
+<input type="checkbox" name="botcheck" style="display:none" tabindex="-1" autocomplete="off">
 <label>Nombre<input name="nombre" required></label>
 <label>Correo<input type="email" name="correo" required></label>
 <label>Teléfono / WhatsApp<input name="tel"></label>
 <label>¿Qué quieres importar?<textarea name="msg" rows="4" required placeholder="Producto, cantidad aproximada, si ya tienes proveedor..."></textarea></label>
-<button class="btn" type="submit">Enviar consulta</button>
+<button class="btn" type="submit" id="send">Enviar consulta</button>
+<p id="status" role="status" style="font-size:.92rem;min-height:1.4em"></p>
 </form>
 </div>
 </section>
@@ -192,18 +193,30 @@ section{padding:56px 0}
 
 <script>
 /* EDITA ESTOS DATOS */
-const EMAIL = "contacto@tudominio.cl";
-const WHATSAPP = "56900000000"; // código país + número, sin + ni espacios
+const ACCESS_KEY = "df2cad0a-575a-4c41-ac8b-e4c3f9939e1d"; // la recibes por correo en web3forms.com
+const WHATSAPP = "56922468707"; // código país + número, sin + ni espacios
 
 document.getElementById("y").textContent = new Date().getFullYear();
-const m = document.getElementById("mailLink");
-m.href = "mailto:" + EMAIL; m.textContent = EMAIL;
 document.getElementById("waLink").href = "https://wa.me/" + WHATSAPP + "?text=" + encodeURIComponent("Hola Orbis, quiero cotizar una importación desde China.");
-document.getElementById("f").addEventListener("submit", e => {
+
+const form = document.getElementById("f"), st = document.getElementById("status"), btn = document.getElementById("send");
+form.addEventListener("submit", async e => {
   e.preventDefault();
-  const d = new FormData(e.target);
-  const body = `Nombre: ${d.get("nombre")}\nCorreo: ${d.get("correo")}\nTeléfono: ${d.get("tel")}\n\n${d.get("msg")}`;
-  location.href = "mailto:" + EMAIL + "?subject=" + encodeURIComponent("Consulta de importación - " + d.get("nombre")) + "&body=" + encodeURIComponent(body);
+  if (ACCESS_KEY.startsWith("PEGA_")) { st.style.color = "#b42318"; st.textContent = "El formulario aún no está configurado."; return; }
+  const d = new FormData(form);
+  d.append("access_key", ACCESS_KEY);
+  d.append("subject", "Nueva cotización Orbis - " + d.get("nombre"));
+  d.append("from_name", "Sitio web Orbis");
+  btn.disabled = true; btn.textContent = "Enviando…"; st.textContent = "";
+  try {
+    const r = await fetch("https://api.web3forms.com/submit", { method: "POST", body: d });
+    const j = await r.json();
+    if (j.success) { form.reset(); st.style.color = "#12805c"; st.textContent = "¡Gracias! Recibimos tu consulta y te contactaremos pronto."; }
+    else throw new Error(j.message);
+  } catch (err) {
+    st.style.color = "#b42318"; st.textContent = "No pudimos enviar tu consulta. Escríbenos por WhatsApp.";
+  }
+  btn.disabled = false; btn.textContent = "Enviar consulta";
 });
 </script>
 </body>
